@@ -1,0 +1,126 @@
+
+###############################################################
+
+  "Primitive Variable Solvers for Conservative 
+  
+   General Relativistic Magnetohydrodynamics"
+
+
+    Copyright 2005 Scott C. Noble, Charles F. Gammie, 
+                   Jonathan C. McKinney, and Luca Del Zanna
+
+
+    This file is part of PVS-GRMHD.
+
+    PVS-GRMHD is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    PVS-GRMHD is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with PVS-GRMHD; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+
+
+History:
+
+  -- released to the public June 8, 2005
+
+###############################################################
+
+
+This code consists of the following files:
+
+README             : this file
+COPYING            : GNU Public License (GPL)
+lic.txt            : text file of copyright information
+Makefile           : used to compile main.c 
+main.c             : demonstration program 
+utoprim_1d.c	   : contains those routines for the 1D_W       method
+utoprim_1dvsq1.c   : contains those routines for the 1D_{v^2}   method
+utoprim_1dvsq2.c   : contains those routines for the 1D^*_{v^2} method
+utoprim_2d.c	   : contains those routines for the 2D         method
+utoprim_5d.c	   : contains those routines for the 5D         method
+utoprim_poly.c     : contains those routines for the Polynomial method
+u2p_defs.h         : header file containing compile time options/flags
+u2p_util.c	   : utility routines used by the inversion methods
+u2p_util.h	   : header for u2p_util.h
+
+
+
+In order to use a particular method, you will need to only include the 
+following files in your compilation:
+
+      utoprim_$NAME.c, u2p_util.c, u2p_util.h, u2p_defs.h 
+
+where $NAME is the name of the file pertaining to the method you wish to use. 
+The inversion routine that you will call within your code has the definition:
+
+   int Utoprim_$NAME(FTYPE U[NPR], FTYPE gcov[NDIM][NDIM], FTYPE gcon[NDIM][NDIM], 
+               FTYPE gdet, FTYPE prim[NPR])
+
+
+where $NAME is the same as before (1d, 2d, 5d, 1dvsq2, etc.).  
+FTYPE, NDIM, NPR are all defined in u2p_defs.h  and are the desired floating-point
+type (float, double, long double, etc.), number of spacetime dimensions (default 4), 
+and the number of primitive and conserved variables (default 8 and we
+assume there is an equal number of primitive and conserved variables).  U[NPR] is 
+the array of conserved variables, prim[NPR] is the array of primitive variables, 
+gcov[NDIM][NDIM] is the covariant ("down-down", g_{\mu \nu}) form of the metric, 
+gcon[NDIM][NDIM] is the contravariant ("up-up", g^{\mu \nu}) form of the metric, 
+gdet is sqrt(-det(g_{\mu \nu})  where det(g_{\mu \nu} is the determinant of
+the metric. U[] and prim[] on input and output are defined as the following:
+
+              /  \rho u^t          \
+         U =  |  T^t_\mu + rho u^t |  sqrt(-det(g_{\mu\nu}))
+              \   B^i              /
+
+             /    \rho       \
+         P = |    uu         |
+             | \tilde{u}^i   |
+             \   B^i         /
+
+
+where T_{\mu \nu} is the stress-energy tensor, u^\mu is the 4-velocity, 
+\rho  is the rest-mass density, uu is the internal energy density, 
+B^i = *F^{i t},  *F^{\mu \nu} is the dual of the electromagnetic field tensor,
+and  \tilde{u}^i  is the spatial projection of the 4-velocity (see paper
+for further details).  
+
+U[], gcov[][], gcon[][], and gdet must all be set to their correct 
+values at input, and a "reasonable" guess for the primitive variables 
+must be saved in prim[] at input.   At output, all are the same except 
+prim[] = P(U[])  now, unless the method encountered an error and/or 
+did not converge to a solution.  In this case, prim[] at output
+equals what it was at input.  Also, Utoprim_$NAME() will return a non-zero
+integer if it encountered such a problem.  
+
+
+Currently, only a \Gamma-law equation of state (EOS) is used.  The following 
+routines can easily be changed to use a different EOS:  
+	Utoprim_1d(), Utoprim_2d(), Utoprim_1dvsq2()  
+To change the EOS with these methods, only the routines at the bottom 
+of their associated source files need be changed.  The routines 
+can be identified by the comment above them that states that they
+define the EOS. 
+
+Utoprim_5d() can, in principle, be used with a general EOS, but we have 
+not written it with EOS-portability in mind.  In order to make Utoprim_5d() 
+compatible with a different EOS, the user will have to write a new dudp_calc_g() 
+that calculates the Jacobian dU_i/dP_k  correctly for that EOS.  
+
+Compile-time parameters in u2p_defs.h that you may wish to change 
+are the following:
+
+GAMMA           :  adiabatic index of the \Gamma-law equation of state
+NPR             :  number of conserved and primitive variables (assumed to be the same)
+NDIM            :  number of spacetime dimensions (assumed to be the same)
+FTYPE           :  type used for floating-point arithmetic (default double)
+NEWT_TOL        :  "TOL" of the paper
+MAX_NEWT_ITER   :  "N_{NR}" of the paper
+EXTRA_NEWT_ITER :  "N_{extra}" of the paper 
